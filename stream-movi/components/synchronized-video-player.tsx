@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
-import { LiveKitSyncManager, PlaybackState, RoomParticipant, UserRole } from '@/lib/livekit-sync';
+import { LiveKitSyncManager, PlaybackState, RoomParticipant } from '@/lib/livekit-sync';
 
 interface SynchronizedVideoPlayerProps {
   playlistUrl: string;
@@ -110,7 +110,14 @@ export default function SynchronizedVideoPlayer({
         syncManagerRef.current = syncManager;
       } catch (err) {
         console.error('Failed to connect to LiveKit:', err);
-        setError('Failed to connect to synchronization server');
+        const error = err as Error;
+        if (error.message?.includes('connect') || error.message?.includes('network') || error.message?.includes('WebSocket')) {
+          setError('Failed to connect to synchronization server. Please check your LiveKit configuration in .env.local');
+        } else if (error.message?.includes('token')) {
+          setError('Failed to authenticate with synchronization server. Please check your API credentials');
+        } else {
+          setError(error.message || 'Failed to connect to synchronization server');
+        }
       }
     };
 
@@ -220,10 +227,10 @@ export default function SynchronizedVideoPlayer({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 md:gap-4">
       {/* Status bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span
             className={`text-sm font-bold ${
               isLive ? 'text-green-500' : 'text-red-500'
@@ -249,7 +256,7 @@ export default function SynchronizedVideoPlayer({
 
       {/* Participants list */}
       {participants.length > 0 && (
-        <div className="text-sm text-gray-400">
+        <div className="text-sm text-gray-400 hidden md:block">
           Watching: {participants.map((p) => p.name).join(', ')}
         </div>
       )}
@@ -272,19 +279,19 @@ export default function SynchronizedVideoPlayer({
       )}
 
       {/* Controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
         {isHost ? (
           <>
             <button
               onClick={handleStartBroadcast}
               disabled={!isLive}
-              className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50"
+              className="bg-blue-500 text-white px-3 md:px-4 py-2 rounded-md disabled:opacity-50 text-sm md:text-base"
             >
               Play
             </button>
             <button
               onClick={handleStopBroadcast}
-              className="bg-red-500 text-white px-4 py-2 rounded-md"
+              className="bg-red-500 text-white px-3 md:px-4 py-2 rounded-md text-sm md:text-base"
             >
               Pause
             </button>
@@ -294,7 +301,7 @@ export default function SynchronizedVideoPlayer({
               max={videoRef.current?.duration || 100}
               value={videoRef.current?.currentTime || 0}
               onChange={handleSeek}
-              className="flex-1"
+              className="flex-1 min-w-[100px]"
               disabled={!isLive}
             />
           </>

@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
+import { Google_Sans } from "next/font/google";
 import "./globals.css";
+
+const googleSans = Google_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
 
 export const metadata: Metadata = {
   title: "Room",
@@ -14,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`antialiased`}
+        className={`${googleSans.className} antialiased`}
       >
         {children}
       </body>

@@ -1,26 +1,164 @@
+@import "@flaticon/flaticon-uicons/css/all/all";
 @import "tailwindcss";
 
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ========== BACKGROUNDS ========== */
+  --bg-primary: #0b0f1a;
+  --bg-secondary: #111827;
+  --bg-tertiary: #161c2f;
+  --bg-elevated: #1c2238;
+  --bg-overlay: rgba(0, 0, 0, 0.65);
+
+  /* ========== SURFACES ========== */
+  --surface-default: #1a1f2e;
+  --surface-hover: #22283c;
+
+  /* ========== BORDERS ========== */
+  --border-subtle: #262b3d;
+  --border-strong: #323a55;
+
+  /* ========== TEXT ========== */
+  --text-primary: #f8fafc;
+  --text-secondary: #a1a8c3;
+  --text-muted: #6b7280;
+  --text-inverse: #0b0f1a;
+
+  /* ========== STATES ========== */
+  --accent-soft: #1e293b;
+  --focus-ring: #334155;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --error: #dc2626;
+
+  /* ========== RADIUS ========== */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* ========== BUTTON COLORS ========== */
+
+  --btn-primary-bg: #1c2238;
+  --btn-primary-hover: #22283c;
+  --btn-primary-active: #262f48;
+
+  --btn-secondary-bg: transparent;
+  --btn-secondary-hover: #1a1f2e;
+
+  --btn-ghost-hover: rgba(255, 255, 255, 0.05);
+
+  --btn-danger-bg: #dc2626;
+  --btn-danger-hover: #b91c1c;
+
+  --btn-success-bg: #16a34a;
+  --btn-success-hover: #15803d;
+
+  --btn-disabled-bg: #1a1f2e;
+  --btn-disabled-text: #6b7280;
+
+  /* ========== LINKS ========== */
+
+  --link-default: #2D57FF;
+  --link-hover: #f8fafc;
+
+  --link-muted: #6b7280;
+  --link-muted-hover: #a1a8c3;
+
+  --link-active: #ffffff;
+
+  --link-danger: #dc2626;
+  --link-danger-hover: #b91c1c;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Global Defaults */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Card Example */
+.card {
+  background: var(--surface-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+/* Button Example */
+.button-primary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}
+
+.button-primary:hover {
+  background: var(--surface-hover);
+}
+.button:active {
+  transform: scale(0.98);
+}
+.button:disabled {
+  background: var(--btn-disabled-bg);
+  color: var(--btn-disabled-text);
+  border-color: var(--border-subtle);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.button-success {
+  background: var(--btn-success-bg);
+  border: none;
+  color: #ffffff;
+}
+
+.button-success:hover {
+  background: var(--btn-success-hover);
+}
+
+.button-danger {
+  background: var(--btn-danger-bg);
+  border: none;
+  color: #ffffff;
+}
+
+.button-danger:hover {
+  background: var(--btn-danger-hover);
+}
+.button-ghost {
+  border: none;
+  background: transparent;
+}
+
+.button-ghost:hover {
+  background: var(--btn-ghost-hover);
+}
+.button-secondary {
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--border-strong);
+}
+
+.button-secondary:hover {
+  background: var(--btn-secondary-hover);
+}
+
+/* ========== RESPONSIVE UTILITIES ========== */
+
+/* Small phones */
+@media (max-width: 640px) {
+  .card {
+    padding: 1rem;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Tablet and up */
+@media (min-width: 768px) {
+  .card {
+    padding: 1.5rem;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1024px) {
+  .card {
+    padding: 2rem;
+  }
 }
