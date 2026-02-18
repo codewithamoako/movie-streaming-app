@@ -9,6 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "hls.js": "^1.6.15",
+    "livekit": "^0.0.1",
+    "livekit-client": "^2.17.1",
+    "livekit-server-sdk": "^2.15.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
