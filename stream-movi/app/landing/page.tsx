@@ -72,7 +72,7 @@ export default function Landing() {
     <>
       <Navbar />
 
-      <div className="flex flex-col justify-center items-center min-h-[85vh] md:min-h-[50svh] px-4">
+      <div className="flex flex-col justify-center items-center min-h-[95vh] md:min-h-[50svh] px-4">
         <div className="flex flex-col justify-center items-center w-full max-w-2xl">
 
           {/* Text Section */}

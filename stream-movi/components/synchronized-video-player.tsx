@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
-import { LiveKitSyncManager, PlaybackState, RoomParticipant } from '@/lib/livekit-sync';
+import { LiveKitSyncManager, PlaybackState, RoomParticipant, EmojiReaction, EmojiType } from '@/lib/livekit-sync';
 
 interface SynchronizedVideoPlayerProps {
   playlistUrl: string;
@@ -45,6 +45,7 @@ export default function SynchronizedVideoPlayer({
   const [isSeeking, setIsSeeking] = useState(false);
   const [buffered, setBuffered] = useState(0);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'idle'>('idle');
+  const [activeReactions, setActiveReactions] = useState<EmojiReaction[]>([]);
 
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -251,6 +252,14 @@ export default function SynchronizedVideoPlayer({
             onSyncRequest: () => {
               return getPlaybackSnapshot();
             },
+            onEmojiReaction: (reaction) => {
+              // Add new reaction to the list
+              setActiveReactions(prev => [...prev, reaction]);
+              // Remove reaction after animation (3 seconds)
+              setTimeout(() => {
+                setActiveReactions(prev => prev.filter(r => r !== reaction));
+              }, 3000);
+            },
           }
         );
 
@@ -389,6 +398,23 @@ export default function SynchronizedVideoPlayer({
     }
   }, []);
 
+  const handleEmojiReaction = useCallback((emoji: EmojiType) => {
+    if (syncManagerRef.current?.isConnected()) {
+      syncManagerRef.current.sendEmojiReaction(emoji);
+      // Also show locally immediately
+      const localReaction: EmojiReaction = {
+        emoji,
+        senderId: 'local',
+        senderName: userName,
+        timestamp: Date.now(),
+      };
+      setActiveReactions(prev => [...prev, localReaction]);
+      setTimeout(() => {
+        setActiveReactions(prev => prev.filter(r => r !== localReaction));
+      }, 3000);
+    }
+  }, [userName]);
+
   // ─── Formatting ──────────────────────────────────────────────────────────────
 
   const formatTime = (seconds: number): string => {
@@ -498,6 +524,33 @@ export default function SynchronizedVideoPlayer({
         style={{ pointerEvents: 'none' }}
       >
         {/* Invisible click target handled by video element */}
+      </div>
+
+      {/* Emoji Reactions Display */}
+      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center">
+        {activeReactions.map((reaction, index) => (
+          <div
+            key={`${reaction.senderId}-${reaction.timestamp}-${index}`}
+            className="flex flex-col items-center animate-bounce"
+            style={{
+              animationDelay: `${index * 0.1}s`,
+              marginTop: index > 0 ? '-15px' : '0',
+            }}
+          >
+            <div className="flex items-center">
+              <span className="text-xl animate-pulse">
+                {reaction.emoji === 'heart' && '❤️'}
+                {reaction.emoji === 'sad' && '😢'}
+                {reaction.emoji === 'funny' && '😂'}
+                {reaction.emoji === 'scared' && '😱'}
+              </span>
+
+            </div>
+            <span className="text-xs text-white bg-black/50 px-2 py-0.5 rounded-full mt-1 whitespace-nowrap">
+              {reaction.senderName}
+            </span>
+          </div>
+        ))}
       </div>
 
       {/* Bottom Controls */}
@@ -645,6 +698,38 @@ export default function SynchronizedVideoPlayer({
               </svg>
             )}
           </button>
+
+          {/* Emoji Reactions */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => handleEmojiReaction('heart')}
+              className="text-lg hover:scale-125 transition-transform p-1"
+              aria-label="Heart reaction"
+            >
+              ❤️
+            </button>
+            <button
+              onClick={() => handleEmojiReaction('sad')}
+              className="text-lg hover:scale-125 transition-transform p-1"
+              aria-label="Sad reaction"
+            >
+              😢
+            </button>
+            <button
+              onClick={() => handleEmojiReaction('funny')}
+              className="text-lg hover:scale-125 transition-transform p-1"
+              aria-label="Funny reaction"
+            >
+              😂
+            </button>
+            <button
+              onClick={() => handleEmojiReaction('scared')}
+              className="text-lg hover:scale-125 transition-transform p-1"
+              aria-label="Scared reaction"
+            >
+              😱
+            </button>
+          </div>
         </div>
       </div>
     </div>

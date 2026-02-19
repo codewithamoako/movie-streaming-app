@@ -13,10 +13,19 @@ export interface PlaybackState {
 }
 
 export interface SyncMessage {
-  type: 'playback_state' | 'user_joined' | 'user_left' | 'sync_request' | 'sync_response';
+  type: 'playback_state' | 'user_joined' | 'user_left' | 'sync_request' | 'sync_response' | 'emoji_reaction';
   payload: any;
   senderId: string;
   senderName: string;
+}
+
+export type EmojiType = 'heart' | 'sad' | 'funny' | 'scared';
+
+export interface EmojiReaction {
+  emoji: EmojiType;
+  senderId: string;
+  senderName: string;
+  timestamp: number;
 }
 
 export type UserRole = 'host' | 'viewer';
@@ -47,6 +56,7 @@ export class LiveKitSyncManager {
   private onConnectionChange?: (connected: boolean) => void;
   private onError?: (error: Error) => void;
   private onSyncRequest?: () => PlaybackState | null;
+  private onEmojiReaction?: (reaction: EmojiReaction) => void;
 
   constructor(
     roomName: string,
@@ -58,6 +68,7 @@ export class LiveKitSyncManager {
       onConnectionChange?: (connected: boolean) => void;
       onError?: (error: Error) => void;
       onSyncRequest?: () => PlaybackState | null;
+      onEmojiReaction?: (reaction: EmojiReaction) => void;
     }
   ) {
     this.roomName = roomName;
@@ -68,6 +79,7 @@ export class LiveKitSyncManager {
     this.onConnectionChange = callbacks.onConnectionChange;
     this.onError = callbacks.onError;
     this.onSyncRequest = callbacks.onSyncRequest;
+    this.onEmojiReaction = callbacks.onEmojiReaction;
   }
 
   async connect(token: string): Promise<void> {
@@ -178,6 +190,10 @@ export class LiveKitSyncManager {
             }
           }
           break;
+        case 'emoji_reaction':
+          console.log('[LiveKit] Received emoji reaction from:', message.senderName, message.payload);
+          this.onEmojiReaction?.(message.payload);
+          break;
       }
     } catch (error) {
       console.error('Error handling data received:', error);
@@ -195,6 +211,21 @@ export class LiveKitSyncManager {
       payload: {
         ...state,
         senderId: this.room?.localParticipant?.identity,
+      },
+      senderId: this.room?.localParticipant.identity || '',
+      senderName: this.participantName,
+    });
+  }
+
+  sendEmojiReaction(emoji: EmojiType): void {
+    console.log('[LiveKit] Sending emoji reaction:', emoji);
+    this.broadcastMessage({
+      type: 'emoji_reaction',
+      payload: {
+        emoji,
+        senderId: this.room?.localParticipant?.identity,
+        senderName: this.participantName,
+        timestamp: Date.now(),
       },
       senderId: this.room?.localParticipant.identity || '',
       senderName: this.participantName,
