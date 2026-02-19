@@ -1,6 +1,7 @@
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap");
+
 @import "@flaticon/flaticon-uicons/css/all/all";
 @import "tailwindcss";
-
 
 :root {
   /* ========== BACKGROUNDS ========== */
@@ -58,7 +59,7 @@
 
   /* ========== LINKS ========== */
 
-  --link-default: #2D57FF;
+  --link-default: #2d57ff;
   --link-hover: #f8fafc;
 
   --link-muted: #6b7280;
@@ -74,7 +75,7 @@
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: "Google Sans", sans-serif;
 }
 
 /* Card Example */

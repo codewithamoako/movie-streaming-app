@@ -13,7 +13,7 @@ export interface PlaybackState {
 }
 
 export interface SyncMessage {
-  type: 'playback_state' | 'user_joined' | 'user_left' | 'sync_request';
+  type: 'playback_state' | 'user_joined' | 'user_left' | 'sync_request' | 'sync_response';
   payload: any;
   senderId: string;
   senderName: string;
@@ -31,6 +31,12 @@ export interface RoomParticipant {
 // LiveKit configuration
 const LIVEKIT_URL = process.env.NEXT_PUBLIC_LIVEKIT_URL || 'ws://localhost:7880';
 
+// Debug logging for environment variables
+console.log('[LiveKitSync] Environment check:');
+console.log('[LiveKitSync] NEXT_PUBLIC_LIVEKIT_URL:', process.env.NEXT_PUBLIC_LIVEKIT_URL);
+console.log('[LiveKitSync] LIVEKIT_URL (server only):', process.env.LIVEKIT_URL);
+console.log('[LiveKitSync] Using URL:', LIVEKIT_URL);
+
 export class LiveKitSyncManager {
   private room: Room | null = null;
   private participantName: string;
@@ -40,6 +46,7 @@ export class LiveKitSyncManager {
   private onParticipantChange?: (participants: RoomParticipant[]) => void;
   private onConnectionChange?: (connected: boolean) => void;
   private onError?: (error: Error) => void;
+  private onSyncRequest?: () => PlaybackState | null;
 
   constructor(
     roomName: string,
@@ -50,6 +57,7 @@ export class LiveKitSyncManager {
       onParticipantChange?: (participants: RoomParticipant[]) => void;
       onConnectionChange?: (connected: boolean) => void;
       onError?: (error: Error) => void;
+      onSyncRequest?: () => PlaybackState | null;
     }
   ) {
     this.roomName = roomName;
@@ -59,6 +67,7 @@ export class LiveKitSyncManager {
     this.onParticipantChange = callbacks.onParticipantChange;
     this.onConnectionChange = callbacks.onConnectionChange;
     this.onError = callbacks.onError;
+    this.onSyncRequest = callbacks.onSyncRequest;
   }
 
   async connect(token: string): Promise<void> {
@@ -71,6 +80,7 @@ export class LiveKitSyncManager {
       // Set up event listeners
       this.room
         .on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+          console.log('[LiveKit] Connection state changed:', state);
           this.onConnectionChange?.(state === ConnectionState.Connected);
         })
         .on(RoomEvent.ParticipantConnected, () => {
@@ -80,6 +90,7 @@ export class LiveKitSyncManager {
           this.notifyParticipantChange();
         })
         .on(RoomEvent.DataReceived, (payload: any) => {
+          console.log('[LiveKit] DataReceived event triggered');
           this.handleDataReceived(payload);
         });
 
@@ -128,21 +139,44 @@ export class LiveKitSyncManager {
       
       // Ignore own messages
       if (message.senderId === this.room?.localParticipant.identity) {
+        console.log('[LiveKit] Ignoring own message');
         return;
       }
 
+      console.log('[LiveKit] Received message from:', message.senderName, 'type:', message.type);
+
       switch (message.type) {
         case 'playback_state':
-          if (this.role === 'viewer') {
-            this.onPlaybackStateChange?.(message.payload);
-          }
+          console.log('[LiveKit] Received playback state from:', message.senderName, message.payload);
+          // All participants sync their playback to the latest state
+          this.onPlaybackStateChange?.(message.payload);
+          break;
+        case 'sync_response':
+          console.log('[LiveKit] Received sync response from:', message.senderName, message.payload);
+          // Apply the sync response as a playback state update
+          this.onPlaybackStateChange?.(message.payload);
           break;
         case 'user_joined':
         case 'user_left':
           this.notifyParticipantChange();
           break;
         case 'sync_request':
-          // Host should respond with current state
+          console.log('[LiveKit] Received sync request from:', message.senderName);
+          // Any participant (especially host) responds with current state
+          if (this.onSyncRequest) {
+            const currentState = this.onSyncRequest();
+            if (currentState) {
+              this.broadcastMessage({
+                type: 'sync_response',
+                payload: {
+                  ...currentState,
+                  timestamp: Date.now(),
+                },
+                senderId: this.room?.localParticipant.identity || '',
+                senderName: this.participantName,
+              });
+            }
+          }
           break;
       }
     } catch (error) {
@@ -151,22 +185,38 @@ export class LiveKitSyncManager {
   }
 
   sendPlaybackState(state: PlaybackState): void {
-    if (this.role !== 'host') return;
-
+    // All participants can send playback state
+    console.log('[LiveKit] Sending playback state:', state);
+    console.log('[LiveKit] Room exists:', !!this.room);
+    console.log('[LiveKit] Local participant:', this.room?.localParticipant?.identity);
+    
     this.broadcastMessage({
       type: 'playback_state',
-      payload: state,
+      payload: {
+        ...state,
+        senderId: this.room?.localParticipant?.identity,
+      },
       senderId: this.room?.localParticipant.identity || '',
       senderName: this.participantName,
     });
   }
 
   private broadcastMessage(message: SyncMessage): void {
-    if (!this.room) return;
+    if (!this.room) {
+      console.log('[LiveKit] broadcastMessage: room is null');
+      return;
+    }
 
+    if (this.room.state !== ConnectionState.Connected) {
+      console.log('[LiveKit] broadcastMessage: room not connected, state:', this.room.state);
+      return;
+    }
+
+    console.log('[LiveKit] Broadcasting message:', message.type);
     const data = new TextEncoder().encode(JSON.stringify(message));
     // Use the correct method for publishing data
     this.room.localParticipant.publishData(data);
+    console.log('[LiveKit] Data published successfully');
   }
 
   private async notifyParticipantChange(): Promise<void> {
@@ -242,5 +292,9 @@ export class LiveKitSyncManager {
 
   isConnected(): boolean {
     return this.room?.state === ConnectionState.Connected;
+  }
+
+  getLocalParticipantId(): string | undefined {
+    return this.room?.localParticipant?.identity;
   }
 }

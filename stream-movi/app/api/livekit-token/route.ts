@@ -23,21 +23,14 @@ export async function POST(request: NextRequest) {
       name: participantName,
     });
 
-    // Grant permissions based on role
+    // Grant permissions - all participants can control playback
     at.addGrant({
       room: roomName,
       roomJoin: true,
-      canPublish: false,
+      canPublish: true,
+      canPublishData: true,
       canSubscribe: true,
     });
-
-    // Host can publish (control playback)
-    if (isHost) {
-      at.addGrant({
-        canPublish: true,
-        canPublishData: true,
-      });
-    }
 
     const token = await at.toJwt();
 
